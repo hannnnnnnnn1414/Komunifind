@@ -1,0 +1,11 @@
+bin
+tmp
+data
+*.exe
+*.test
+*.out
+.env
+.env.*
+.git
+.DS_Store
+Thumbs.db

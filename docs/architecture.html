@@ -1,0 +1,652 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Komunifind — Peta Arsitektur</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #f7f7f7;
+    --surface-2: #f1f1f1;
+    --ink: #0b0b0b;
+    --ink-soft: #3a3a3a;
+    --muted: #6e6e6e;
+    --line: #e3e3e3;
+    --line-strong: #c7c7c7;
+    --accent: #111111;
+    --radius: 14px;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 15.5px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--line-strong); }
+  a:hover { border-bottom-color: var(--ink); }
+  code, pre { font-family: var(--mono); }
+  code { background: var(--surface-2); padding: 1px 6px; border-radius: 6px; font-size: 0.88em; }
+  pre {
+    background: #0d0d0d;
+    color: #f2f2f2;
+    padding: 16px 18px;
+    border-radius: 12px;
+    overflow-x: auto;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  pre code { background: transparent; padding: 0; color: inherit; }
+
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+
+  header.top {
+    border-bottom: 1px solid var(--line);
+    background: #fff;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+  }
+  .top-inner { display: flex; align-items: center; gap: 16px; height: 64px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-family: var(--serif); font-size: 20px; font-weight: 700; border: 0; }
+  .brand-mark { width: 28px; height: 28px; border-radius: 8px; background: var(--accent); color: #fff; display: grid; place-items: center; font-family: var(--sans); font-size: 14px; }
+  .top nav { margin-left: auto; display: flex; gap: 4px; flex-wrap: wrap; }
+  .top nav a { font-size: 13px; color: var(--ink-soft); padding: 6px 10px; border-radius: 999px; border: 0; }
+  .top nav a:hover { background: var(--surface-2); }
+
+  .hero { padding: 56px 0 36px; border-bottom: 1px solid var(--line); }
+  .eyebrow { margin: 0 0 12px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--muted); }
+  h1 { margin: 0; font-family: var(--serif); font-size: clamp(34px, 5vw, 54px); line-height: 1.05; letter-spacing: -0.025em; font-weight: 700; }
+  .lede { margin: 16px 0 0; max-width: 72ch; color: var(--ink-soft); font-size: 16.5px; }
+  .meta { margin-top: 22px; display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { font-size: 12px; padding: 4px 10px; border: 1px solid var(--line-strong); border-radius: 999px; color: var(--ink-soft); background: #fff; }
+  .chip.solid { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  section { padding: 44px 0; border-bottom: 1px solid var(--line); }
+  section:last-of-type { border-bottom: 0; }
+  h2 { margin: 0 0 8px; font-family: var(--serif); font-size: 29px; letter-spacing: -0.02em; }
+  h3 { margin: 26px 0 10px; font-size: 17px; letter-spacing: -0.01em; }
+  .sub { margin: 0 0 22px; color: var(--muted); max-width: 80ch; }
+  p { margin: 0 0 12px; }
+
+  .grid { display: grid; gap: 16px; }
+  .g2 { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+  .g3 { grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
+  .card { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 20px; }
+  .card h3 { margin-top: 0; }
+  .card p:last-child { margin-bottom: 0; }
+  .card .kicker { font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+
+  ul { margin: 8px 0 12px; padding-left: 20px; }
+  li { margin: 4px 0; }
+  .tight li { margin: 2px 0; }
+
+  /* Diagram */
+  .diagram { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 26px 20px; }
+  .lane { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+  .nodes { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; width: 100%; }
+  .node {
+    min-width: 170px;
+    flex: 1 1 170px;
+    max-width: 230px;
+    background: #fff;
+    border: 1px solid var(--line-strong);
+    border-radius: 12px;
+    padding: 12px 14px;
+    text-align: left;
+  }
+  .node strong { display: block; font-size: 14px; }
+  .node span { display: block; font-family: var(--mono); font-size: 11px; color: var(--muted); margin-top: 4px; }
+  .node.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .node.primary span { color: rgba(255,255,255,0.75); }
+  .arrow { color: var(--muted); font-size: 18px; line-height: 1; }
+  .arrow-label { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  .split { display: flex; gap: 16px; width: 100%; justify-content: center; flex-wrap: wrap; }
+  .split .col { flex: 1 1 260px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 14px; background: #fff; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  th { text-align: left; background: var(--surface); font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); padding: 10px 14px; border-bottom: 1px solid var(--line); }
+  td { padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tr:last-child td { border-bottom: 0; }
+  td code { white-space: nowrap; }
+
+  .steps { counter-reset: step; display: grid; gap: 10px; margin: 14px 0 0; padding: 0; list-style: none; }
+  .steps li { counter-increment: step; position: relative; padding: 10px 14px 10px 44px; background: #fff; border: 1px solid var(--line); border-radius: 10px; }
+  .steps li::before {
+    content: counter(step);
+    position: absolute; left: 12px; top: 10px;
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--accent); color: #fff;
+    display: grid; place-items: center;
+    font-family: var(--mono); font-size: 11px;
+  }
+
+  .flow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 14px 0; }
+  .pill { font-family: var(--mono); font-size: 11.5px; padding: 6px 12px; border: 1px solid var(--line-strong); border-radius: 999px; background: #fff; }
+  .pill.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .pill.off { background: #fff; color: var(--muted); border-style: dashed; }
+  .flow .op { font-family: var(--mono); font-size: 10.5px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+
+  .callout { border-left: 3px solid var(--accent); background: var(--surface); padding: 12px 16px; border-radius: 0 10px 10px 0; margin: 16px 0; font-size: 14.5px; }
+  .callout strong { font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; display: block; margin-bottom: 4px; }
+
+  .toc { display: grid; gap: 6px; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
+  .toc a { display: block; padding: 8px 12px; border: 1px solid var(--line); border-radius: 9px; background: #fff; font-size: 13.5px; }
+  .toc a:hover { background: var(--surface-2); }
+
+  footer { padding: 28px 0 46px; color: var(--muted); font-size: 13px; }
+  footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+
+  @media (max-width: 700px) {
+    .top nav { display: none; }
+    section { padding: 32px 0; }
+    pre { font-size: 12px; }
+  }
+  @media print {
+    header.top { position: static; }
+    .toc, nav { display: none; }
+    section { break-inside: avoid; }
+    pre { background: #f2f2f2; color: #000; border: 1px solid #ccc; }
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap top-inner">
+    <a class="brand" href="#atas"><span class="brand-mark">K</span> Komunifind</a>
+    <nav>
+      <a href="#ikhtisar">Ikhtisar</a>
+      <a href="#diagram">Diagram</a>
+      <a href="#alur">Alur</a>
+      <a href="#data">Data</a>
+      <a href="#api">API</a>
+      <a href="#folder">Folder</a>
+      <a href="#jalan">Cara jalan</a>
+      <a href="#keputusan">Keputusan</a>
+    </nav>
+  </div>
+</header>
+
+<div class="hero" id="atas">
+  <div class="wrap">
+    <p class="eyebrow">Dokumen teknis · Fase 1</p>
+    <h1>Peta arsitektur Komunifind</h1>
+    <p class="lede">
+      Penjelasan sederhana tentang bagaimana aplikasi ini disusun: siapa bicara dengan siapa,
+      di mana aturan bisnis disimpan, bagaimana data mengalir, dan kenapa diputuskan begitu.
+      Ditulis untuk dibaca tanpa harus buka kode.
+    </p>
+    <div class="meta">
+      <span class="chip solid">Next.js + Go + Postgres</span>
+      <span class="chip">Docker Compose</span>
+      <span class="chip">nginx</span>
+      <span class="chip">1 VPS</span>
+      <span class="chip">Skala &lt;500 user</span>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <section id="ikhtisar">
+    <h2>1. Ikhtisar singkat</h2>
+    <p class="sub">Tiga kalimat yang cukup untuk paham sistem ini.</p>
+    <div class="grid g2">
+      <div class="card">
+        <div class="kicker">Apa ini</div>
+        <h3>Direktori komunitas</h3>
+        <p>Pengunjung bisa mencari komunitas dan melihat event tanpa akun. Untuk mendaftar event, user login dengan Google. Panitia mengelola komunitas dan event-nya sendiri lewat dashboard.</p>
+      </div>
+      <div class="card">
+        <div class="kicker">Aturan emas</div>
+        <h3>Go pemilik aturan, Next pemilik tampilan</h3>
+        <p>Semua keputusan bisnis (kuota, status pendaftaran, akses per komunitas) hanya ada di Go. Next hanya merender halaman, mengurus login Google, upload file, dan mengirim email.</p>
+      </div>
+      <div class="card">
+        <div class="kicker">Kenapa dipisah</div>
+        <h3>Biar tidak berantakan</h3>
+        <p>Kalau aturan bisnis tersebar di dua tempat, cepat atau lambat keduanya berbeda. Dengan satu pemilik aturan, bug lebih mudah dilacak dan perubahan lebih aman.</p>
+      </div>
+      <div class="card">
+        <div class="kicker">Cara akses</div>
+        <h3>Browser cuma kenal Next</h3>
+        <p>Browser tidak pernah memanggil Go secara langsung. Next meneruskan permintaan ke Go sambil membawa token dari cookie. Tidak ada CORS, token tidak pernah terlihat oleh JavaScript browser.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="diagram">
+    <h2>2. Diagram besar</h2>
+    <p class="sub">Lima komponen berjalan di satu server, dijalankan dengan Docker Compose.</p>
+
+    <div class="diagram">
+      <div class="lane">
+        <div class="nodes">
+          <div class="node"><strong>Browser</strong><span>pengunjung · user · panitia · admin</span></div>
+        </div>
+        <div class="arrow">↓</div>
+        <div class="arrow-label">HTTP ke port 8088</div>
+        <div class="nodes">
+          <div class="node primary"><strong>nginx</strong><span>:80 / :443 · reverse proxy</span></div>
+        </div>
+        <div class="arrow">↓</div>
+        <div class="arrow-label">routing berdasarkan path</div>
+        <div class="split">
+          <div class="col">
+            <div class="node"><strong>web — Next.js</strong><span>:3000 · halaman, OAuth, upload, email</span></div>
+            <div class="arrow">↓</div>
+            <div class="arrow-label">server-side fetch + Bearer JWT</div>
+          </div>
+          <div class="col">
+            <div class="node"><strong>static</strong><span>/uploads/* &amp; /images/*</span></div>
+          </div>
+        </div>
+        <div class="nodes">
+          <div class="node primary"><strong>api — Go</strong><span>:8080 · seluruh aturan bisnis</span></div>
+        </div>
+        <div class="arrow">↓</div>
+        <div class="arrow-label">query SQL (pgx)</div>
+        <div class="nodes">
+          <div class="node"><strong>PostgreSQL 16</strong><span>:5432 · data utama</span></div>
+        </div>
+        <div class="arrow">↓</div>
+        <div class="nodes">
+          <div class="node"><strong>volume uploads</strong><span>gambar yang di-reencode ke WebP</span></div>
+        </div>
+      </div>
+    </div>
+
+    <h3>Pembagian tugas</h3>
+    <table>
+      <thead>
+        <tr><th>Komponen</th><th>Tanggung jawab</th><th>Yang tidak boleh dilakukan</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>nginx</strong></td>
+          <td>Menerima koneksi, meneruskan <code>/</code> ke Next, <code>/api/v1/</code> ke Go, dan menyajikan <code>/uploads/</code> sebagai file statis.</td>
+          <td>Tidak menyimpan logika aplikasi.</td>
+        </tr>
+        <tr>
+          <td><strong>web — Next.js</strong></td>
+          <td>Render halaman, alur Google OAuth, cookie sesi, panggilan ke API, upload gambar (WebP), kirim email.</td>
+          <td>Tidak boleh query database langsung atau menghitung aturan bisnis.</td>
+        </tr>
+        <tr>
+          <td><strong>api — Go</strong></td>
+          <td>User &amp; role, komunitas, event, pendaftaran, kuota, approval, pengecekan akses per komunitas, penerbitan JWT.</td>
+          <td>Tidak mengurus tampilan atau file gambar.</td>
+        </tr>
+        <tr>
+          <td><strong>PostgreSQL</strong></td>
+          <td>Menyimpan seluruh data. Constraint menjaga integritas (unicity, status, relasi).</td>
+          <td>—</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="alur">
+    <h2>3. Alur utama</h2>
+    <p class="sub">Empat skenario yang paling sering terjadi.</p>
+
+    <h3>A. Pengunjung membuka halaman</h3>
+    <ol class="steps">
+      <li>Browser membuka <code>http://localhost:8088/</code>.</li>
+      <li>nginx meneruskan ke container Next.</li>
+      <li>Next (server-side) memanggil Go: daftar komunitas, filter, dan event terdekat.</li>
+      <li>Go membaca Postgres, mengembalikan JSON.</li>
+      <li>Next merender HTML lengkap, lalu mengirim ke browser.</li>
+      <li>Di browser, animasi scroll dan carousel dijalankan sebagai lapisan tampilan saja.</li>
+    </ol>
+
+    <h3>B. Login dengan Google</h3>
+    <ol class="steps">
+      <li>User klik “Masuk”. Next membuat <code>state</code> acak dan mengarahkan ke Google.</li>
+      <li>Google mengembalikan <code>code</code> ke <code>/api/auth/google/callback</code> milik Next.</li>
+      <li>Next menukar <code>code</code> menjadi ID token, lalu mengirimkannya ke Go.</li>
+      <li>Go memverifikasi tanda tangan, audience, dan masa berlaku token.</li>
+      <li>Go membuat/memperbarui user, lalu menerbitkan JWT (7 hari).</li>
+      <li>Next menyimpan JWT di cookie <code>kf_session</code> yang <code>HttpOnly</code>, lalu mengarahkan sesuai role.</li>
+      <li>Setiap permintaan berikutnya: Next membaca cookie dan mengirim header <code>Authorization: Bearer</code> ke Go.</li>
+    </ol>
+    <div class="callout">
+      <strong>Kenapa aman</strong>
+      Token tidak pernah menyentuh JavaScript browser. Middleware Next hanya dipakai untuk redirect tampilan;
+      pengecekan role dan kepemilikan data tetap dilakukan Go di setiap request.
+    </div>
+
+    <h3>C. Daftar event (kuota + approval)</h3>
+    <div class="flow">
+      <span class="pill">pending</span>
+      <span class="op">approve →</span>
+      <span class="pill on">approved</span>
+      <span class="op">cancel →</span>
+      <span class="pill off">cancelled</span>
+    </div>
+    <div class="flow">
+      <span class="pill">pending</span>
+      <span class="op">reject →</span>
+      <span class="pill off">rejected</span>
+      <span class="op">daftar lagi →</span>
+      <span class="pill">pending</span>
+    </div>
+    <ol class="steps">
+      <li>User klik “Daftar event”. Next meneruskan ke <code>POST /events/:id/registrations</code>.</li>
+      <li>Go memastikan event terbit, belum mulai, dan kuota belum penuh. Baris pendaftaran dibuat dengan status <code>pending</code>.</li>
+      <li>Panitia membuka dashboard, melihat daftar peserta, lalu menekan “Setujui”.</li>
+      <li>Go mengunci baris event (<code>SELECT … FOR UPDATE</code>), menghitung ulang jumlah peserta disetujui, baru menyimpan approval.</li>
+      <li>Jika kuota penuh, approval ditolak dengan pesan jelas.</li>
+      <li>Next mengirim email pemberitahuan (best-effort) dan mencatat hasilnya.</li>
+    </ol>
+    <div class="callout">
+      <strong>Kenapa pakai FOR UPDATE</strong>
+      Dua panitia yang menekan “Setujui” bersamaan tidak bisa menembus kuota, karena penghitungan dan penyimpanan
+      terjadi dalam satu transaksi yang dikunci per event.
+    </div>
+    <ul class="tight">
+      <li>Satu user hanya punya satu baris per event; batal berarti mengubah status, bukan menghapus.</li>
+      <li>Batal dari status disetujui otomatis membebaskan slot, karena kuota dihitung ulang.</li>
+      <li>Status “disetujui” tidak bisa ditolak; kalau perlu keluar, user membatalkan sendiri.</li>
+      <li>Kuota tidak bisa diturunkan di bawah jumlah peserta yang sudah disetujui.</li>
+    </ul>
+
+    <h3>D. Upload gambar</h3>
+    <ol class="steps">
+      <li>Panitia memilih file di form dashboard.</li>
+      <li>Next memvalidasi tipe (JPG/PNG/WebP) dan ukuran (maks 5 MB).</li>
+      <li>Next mengecilkan dan mengubah file menjadi WebP memakai <code>sharp</code> (logo maks 512px, lainnya 1600px).</li>
+      <li>File ditulis ke volume <code>/data/uploads/&lt;prefix&gt;/&lt;uuid&gt;.webp</code>.</li>
+      <li>Next mengirim “key” file ke Go; Go memvalidasi format key sebelum menyimpannya di database.</li>
+      <li>nginx menyajikan file itu di <code>/uploads/…</code> dengan cache panjang.</li>
+    </ol>
+  </section>
+
+  <section id="data">
+    <h2>4. Model data</h2>
+    <p class="sub">Lima tabel inti. Constraint di database adalah pengaman terakhir jika ada bug di kode.</p>
+
+    <div class="grid g2">
+      <div class="card">
+        <h3>users</h3>
+        <p>Akun dari Google. Menyimpan identitas Google (<code>google_sub</code>), email, nama, foto, dan role:</p>
+        <ul class="tight">
+          <li><code>user</code> — pengunjung yang bisa mendaftar event</li>
+          <li><code>organizer</code> — panitia, terikat satu komunitas</li>
+          <li><code>admin</code> — admin pusat</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>communities</h3>
+        <p>Halaman komunitas: slug, nama, tagline, deskripsi, logo, banner, kategori, kota, sosial, status.</p>
+        <p><code>organizer_id</code> unik: satu panitia hanya mengelola satu komunitas (fase 1).</p>
+      </div>
+      <div class="card">
+        <h3>events</h3>
+        <p>Milik satu komunitas. Berisi jadwal, lokasi, kuota (boleh kosong = tanpa batas), poster, status (<code>draft</code>, <code>published</code>, <code>cancelled</code>), harga (disiapkan, fase 1 selalu 0), dan link eksternal seperti Instagram.</p>
+      </div>
+      <div class="card">
+        <h3>registrations</h3>
+        <p>Menghubungkan user dan event. Status: <code>pending</code>, <code>approved</code>, <code>rejected</code>, <code>cancelled</code>. Ada aturan unik <code>(event_id, user_id)</code> supaya tidak ada pendaftaran ganda.</p>
+      </div>
+      <div class="card">
+        <h3>email_logs</h3>
+        <p>Catatan pengiriman email. Dipakai untuk menelusuri kalau ada notifikasi yang gagal. Bukan sumber kebenaran status pendaftaran.</p>
+      </div>
+      <div class="card">
+        <h3>schema_migrations</h3>
+        <p>Daftar migrasi SQL yang sudah dijalankan. Migrasi berjalan otomatis saat container API start dan bersifat idempotent.</p>
+      </div>
+    </div>
+
+    <h3>Relasi</h3>
+<pre><code>users ──< communities (organizer_id, 1:1 di fase 1)
+  │
+  └──< registrations >── events >── communities
+users >── email_logs</code></pre>
+  </section>
+
+  <section id="api">
+    <h2>5. Permukaan API (Go)</h2>
+    <p class="sub">Semua endpoint memakai prefix <code>/api/v1</code>. Endpoint bertanda 🔒 butuh JWT.</p>
+
+    <h3>Publik</h3>
+    <table>
+      <tbody>
+        <tr><td><code>GET /communities</code></td><td>Daftar komunitas + pencarian <code>q</code>, filter <code>category</code>, <code>city</code>, paginasi</td></tr>
+        <tr><td><code>GET /communities/facets</code></td><td>Daftar kategori dan kota untuk dropdown</td></tr>
+        <tr><td><code>GET /communities/:slug</code></td><td>Detail komunitas + event mendatang</td></tr>
+        <tr><td><code>GET /events</code></td><td>Event terbit terdekat</td></tr>
+        <tr><td><code>GET /events/:id</code></td><td>Detail event</td></tr>
+        <tr><td><code>POST /auth/google</code></td><td>Tukar ID token Google dengan JWT aplikasi</td></tr>
+      </tbody>
+    </table>
+
+    <h3>User 🔒</h3>
+    <table>
+      <tbody>
+        <tr><td><code>GET /me</code></td><td>Profil dan role</td></tr>
+        <tr><td><code>GET /me/registrations</code></td><td>Riwayat pendaftaran sendiri</td></tr>
+        <tr><td><code>POST /events/:id/registrations</code></td><td>Daftar event (pending)</td></tr>
+        <tr><td><code>POST /registrations/:id/cancel</code></td><td>Batalkan pendaftaran sendiri</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Panitia 🔒</h3>
+    <table>
+      <tbody>
+        <tr><td><code>GET | PATCH /organizer/community</code></td><td>Lihat/ubah profil komunitas sendiri</td></tr>
+        <tr><td><code>GET | POST /organizer/events</code></td><td>Daftar/buat event</td></tr>
+        <tr><td><code>GET | PATCH /organizer/events/:id</code></td><td>Detail/ubah event</td></tr>
+        <tr><td><code>POST /organizer/events/:id/publish</code></td><td>Terbitkan event</td></tr>
+        <tr><td><code>POST /organizer/events/:id/cancel</code></td><td>Batalkan event + semua pendaftaran</td></tr>
+        <tr><td><code>GET /organizer/events/:id/registrations</code></td><td>Daftar peserta</td></tr>
+        <tr><td><code>POST /registrations/:id/approve</code> • <code>/reject</code></td><td>Setujui/tolak peserta</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Admin pusat 🔒</h3>
+    <table>
+      <tbody>
+        <tr><td><code>POST /admin/communities</code></td><td>Buat komunitas</td></tr>
+        <tr><td><code>GET | PATCH /admin/communities/:id</code></td><td>Lihat/ubah, termasuk assign panitia lewat email</td></tr>
+        <tr><td><code>GET /admin/users</code></td><td>Daftar user</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Internal</h3>
+    <table>
+      <tbody>
+        <tr><td><code>POST /internal/email-logs</code></td><td>Dipakai Next untuk mencatat hasil kirim email. Wajib header <code>X-Internal-Secret</code>.</td></tr>
+        <tr><td><code>POST /dev/login</code></td><td>Hanya aktif jika <code>DEV_LOGIN=true</code>. Untuk development tanpa Google.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="folder">
+    <h2>6. Struktur folder</h2>
+    <p class="sub">Tempat mencari sesuatu.</p>
+<pre><code>komunifind/
+├─ DESIGN.md                dokumen desain asli
+├─ docker-compose.yml       db · api · web · nginx · storage-init
+├─ .env.example             daftar konfigurasi (tanpa rahasia)
+├─ docs/
+│  └─ architecture.html     dokumen ini
+├─ nginx/
+│  └─ komunifind.conf       routing /, /api/v1/, /uploads/
+├─ api/                     backend Go
+│  ├─ cmd/api/              entrypoint server
+│  ├─ cmd/seed/             data demo (9 komunitas, 14 event)
+│  ├─ migrations/           SQL bernomor, dijalankan otomatis
+│  └─ internal/
+│     ├─ auth/              JWT + verifikasi Google
+│     ├─ config/            pembacaan environment
+│     ├─ db/                koneksi + runner migrasi
+│     ├─ store/             akses data + aturan kuota/tenant
+│     └─ httpapi/           router, handler, middleware
+└─ web/                     frontend Next.js
+   ├─ app/                  halaman, route handler, server actions
+   ├─ components/           komponen UI (carousel, scroll reveal, tunnel)
+   ├─ components/ui/        komponen eksperimental (perspective tunnel hero)
+   ├─ lib/                  api client, session, format, mailer, upload
+   └─ public/images/        aset demo</code></pre>
+
+    <h3>Halaman web</h3>
+    <table>
+      <thead><tr><th>Path</th><th>Isi</th><th>Akses</th></tr></thead>
+      <tbody>
+        <tr><td><code>/</code></td><td>Hero tunnel, pencarian, carousel, daftar komunitas, event terdekat</td><td>Publik</td></tr>
+        <tr><td><code>/events</code></td><td>Semua event terdekat</td><td>Publik</td></tr>
+        <tr><td><code>/communities/[slug]</code></td><td>Profil komunitas + event</td><td>Publik</td></tr>
+        <tr><td><code>/events/[id]</code></td><td>Detail event, tombol kunjungi eksternal, form daftar/batal</td><td>Publik / user</td></tr>
+        <tr><td><code>/login</code></td><td>Login Google + login cepat dev</td><td>Publik</td></tr>
+        <tr><td><code>/me</code></td><td>Pendaftaran aktif &amp; riwayat</td><td>User</td></tr>
+        <tr><td><code>/dashboard</code></td><td>Ringkasan panitia, event, peserta</td><td>Organizer</td></tr>
+        <tr><td><code>/dashboard/events/[id]</code></td><td>Kelola event: publish, batal, approve/reject, edit</td><td>Organizer</td></tr>
+        <tr><td><code>/admin</code></td><td>Daftar komunitas, buat komunitas, assign panitia, users</td><td>Admin</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="jalan">
+    <h2>7. Cara menjalankan</h2>
+    <p class="sub">Dari nol sampai bisa dibuka di browser.</p>
+<pre><code># 1. nyalakan Docker Desktop, lalu dari folder project:
+docker compose up -d --build
+
+# 2. isi data demo (sekali per volume)
+docker compose run --rm --entrypoint /app/seed api
+
+# 3. buka
+http://localhost:8088</code></pre>
+    <p>Login cepat (mode development):</p>
+    <ul class="tight">
+      <li><code>admin@komunifind.test</code> — admin pusat</li>
+      <li><code>rina@komunifind.test</code> — panitia Jakarta Indie Runners</li>
+      <li><code>budi@komunifind.test</code> — panitia Bandung Design Circle</li>
+      <li><code>sari@komunifind.test</code> — user biasa</li>
+    </ul>
+    <p>Perintah harian:</p>
+<pre><code>docker compose ps                 # status container
+docker compose logs -f api        # log backend
+docker compose logs -f web        # log frontend
+docker compose up -d --build web  # rebuild setelah ubah frontend
+docker compose up -d --build api  # rebuild setelah ubah backend
+docker compose down -v            # reset total (hapus DB & upload)</code></pre>
+
+    <h3>Konfigurasi penting (.env)</h3>
+    <table>
+      <thead><tr><th>Variabel</th><th>Kegunaan</th></tr></thead>
+      <tbody>
+        <tr><td><code>DATABASE_URL</code></td><td>Koneksi Postgres</td></tr>
+        <tr><td><code>JWT_SECRET</code></td><td>Kunci tanda tangan token sesi</td></tr>
+        <tr><td><code>INTERNAL_SECRET</code></td><td>Kunci endpoint internal &amp; dev login</td></tr>
+        <tr><td><code>GOOGLE_CLIENT_ID/SECRET</code></td><td>Login Google asli (kosong = dev login saja)</td></tr>
+        <tr><td><code>SMTP_*</code></td><td>Pengiriman email (Mailtrap/Resend/Brevo)</td></tr>
+        <tr><td><code>DEV_LOGIN</code></td><td>Hanya untuk development; wajib <code>false</code> di production</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Testing</h3>
+<pre><code># Postgres dev terbuka di localhost:5433
+docker compose exec -T db psql -U komunifind -d postgres \
+  -c "CREATE DATABASE komunifind_test;"
+
+cd api
+# PowerShell:
+$env:TEST_DATABASE_URL="postgres://komunifind:komunifind_dev@localhost:5433/komunifind_test?sslmode=disable"
+go test ./... -count=1</code></pre>
+    <p>Fokus test backend: kuota, isolasi antar komunitas (tenant), dan siklus status pendaftaran.</p>
+  </section>
+
+  <section id="keputusan">
+    <h2>8. Keputusan penting &amp; alasannya</h2>
+    <p class="sub">Kenapa sistem ini terlihat seperti sekarang.</p>
+    <table>
+      <thead><tr><th>Keputusan</th><th>Alasan</th><th>Yang dikorbankan</th></tr></thead>
+      <tbody>
+        <tr><td>Go memegang seluruh aturan bisnis</td><td>Mencegah logika terpecah dan tidak konsisten.</td><td>Next harus memanggil API untuk hampir semua data.</td></tr>
+        <tr><td>Browser hanya bicara ke Next</td><td>Token aman, tidak perlu CORS.</td><td>Satu lapisan proxy tambahan.</td></tr>
+        <tr><td>Satu panitia per komunitas</td><td>Cukup untuk fase 1 dan sederhana.</td><td>Belum ada kolaborasi panitia.</td></tr>
+        <tr><td>Registrasi = kuota + approval</td><td>Panitia bisa mengontrol peserta.</td><td>User harus menunggu, bukan langsung masuk.</td></tr>
+        <tr><td>Kuota dihitung ulang dalam transaksi terkunci</td><td>Mencegah over-quota saat approval bersamaan.</td><td>Sedikit lebih berat daripada counter, tapi benar.</td></tr>
+        <tr><td>Event gratis, field harga disiapkan</td><td>Payment gateway terlalu besar untuk fase 1.</td><td>Belum ada transaksi.</td></tr>
+        <tr><td>Email best-effort</td><td>Status selalu bisa dicek di halaman “Pendaftaranku”.</td><td>Tidak ada jaminan email terkirim.</td></tr>
+        <tr><td>Upload di Next, bukan Go</td><td>Transport file bukan urusan domain bisnis.</td><td>Go dan Next berbagi volume upload.</td></tr>
+        <tr><td>1 VPS + Docker Compose</td><td>Murah dan cukup untuk skala kecil.</td><td>Tidak ada high availability.</td></tr>
+        <tr><td>Tanpa Tailwind/shadcn</td><td>Tema sudah punya CSS sendiri; menghindari reset global yang menabrak.</td><td>Komponen dari 21st.dev diadaptasi manual ke CSS module.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="batas">
+    <h2>9. Batasan &amp; risiko fase 1</h2>
+    <div class="grid g2">
+      <div class="card">
+        <div class="kicker">Belum ada</div>
+        <h3>Bukan tujuan sekarang</h3>
+        <ul class="tight">
+          <li>Join komunitas (membership).</li>
+          <li>Event berbayar dan payment gateway.</li>
+          <li>Chat, forum, komentar.</li>
+          <li>Notifikasi WhatsApp atau push.</li>
+          <li>Multi-bahasa dan aplikasi mobile native.</li>
+          <li>Komunitas membuat halaman sendiri (masih oleh admin).</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="kicker">Risiko yang diterima</div>
+        <h3>Hal yang bisa bikin repot</h3>
+        <ul class="tight">
+          <li>Sesi 7 hari tanpa refresh; habis berarti login ulang.</li>
+          <li>Email bisa telat/gagal; status tetap benar di halaman user.</li>
+          <li>Satu VPS berarti tidak ada redundansi.</li>
+          <li><code>DEV_LOGIN</code> harus mati di production.</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>Keamanan</h3>
+    <ul class="tight">
+      <li>JWT hanya di cookie <code>HttpOnly</code>; tidak pernah dikirim ke JavaScript browser.</li>
+      <li>Setiap request ke Go memverifikasi ulang user dari database; role di token tidak dipercaya buta.</li>
+      <li>Next hanya memeriksa sesi untuk keperluan redirect; otorisasi data dilakukan Go.</li>
+      <li>Endpoint internal butuh <code>X-Internal-Secret</code>.</li>
+      <li>Key file upload divalidasi (prefix, regex, tanpa path traversal).</li>
+      <li>Ganti <code>JWT_SECRET</code> dan <code>INTERNAL_SECRET</code> sebelum deploy.</li>
+    </ul>
+  </section>
+
+  <section id="toc">
+    <h2>Peta baca cepat</h2>
+    <div class="toc">
+      <a href="#ikhtisar">1. Ikhtisar singkat</a>
+      <a href="#diagram">2. Diagram besar</a>
+      <a href="#alur">3. Alur utama</a>
+      <a href="#data">4. Model data</a>
+      <a href="#api">5. Permukaan API</a>
+      <a href="#folder">6. Struktur folder</a>
+      <a href="#jalan">7. Cara menjalankan</a>
+      <a href="#keputusan">8. Keputusan penting</a>
+      <a href="#batas">9. Batasan &amp; risiko</a>
+    </div>
+  </section>
+</div>
+
+<footer>
+  <div class="wrap">
+    <span>Komunifind — peta arsitektur fase 1. Dokumen ini statis, tidak butuh server.</span>
+    <span>Sumber utama: <code>DESIGN.md</code> dan kode di <code>api/</code> &amp; <code>web/</code>.</span>
+  </div>
+</footer>
+
+</body>
+</html>
