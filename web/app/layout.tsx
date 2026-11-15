@@ -1,9 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 import "./globals.css";
 import { getSessionUser } from "@/lib/session";
+import { countPendingByOrganizer } from "@/lib/store/registrations";
+import { countUnassignedCommunities } from "@/lib/store/communities";
 import { ScrollReveal } from "@/components/ScrollReveal";
-import { logoutAction } from "./actions";
+import { AppShell } from "@/components/AppShell";
+import { Toasts } from "@/components/Toasts";
 
 export const metadata: Metadata = {
   title: {
@@ -17,6 +21,23 @@ export const metadata: Metadata = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const user = await getSessionUser();
 
+  let pendingTotal = 0;
+  let unassignedTotal = 0;
+  if (user && (user.role === "organizer" || user.role === "admin")) {
+    try {
+      pendingTotal = (await countPendingByOrganizer(user.id)).total;
+    } catch {
+      pendingTotal = 0;
+    }
+  }
+  if (user && user.role === "admin") {
+    try {
+      unassignedTotal = await countUnassignedCommunities();
+    } catch {
+      unassignedTotal = 0;
+    }
+  }
+
   return (
     <html lang="id">
       <body>
@@ -24,51 +45,44 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <noscript>
           <style>{`[data-reveal]{opacity:1!important;translate:none!important}`}</style>
         </noscript>
-        <header className="site-header">
-          <div className="container inner">
-            <Link href="/" className="brand">
-              <span className="brand-mark">K</span>
-              Komunifind
-            </Link>
-            <nav className="nav">
-              <Link href="/">Jelajah</Link>
-              <Link href="/events">Event</Link>
-              {user ? <Link href="/me">Pendaftaranku</Link> : null}
-              {user && (user.role === "organizer" || user.role === "admin") ? (
-                <Link href="/dashboard">Dashboard</Link>
-              ) : null}
-              {user && user.role === "admin" ? <Link href="/admin">Admin</Link> : null}
-            </nav>
-            <div className="header-right">
-              {user ? (
-                <>
-                  <span className="user-chip">
-                    <span className="avatar">{user.name.slice(0, 1).toUpperCase()}</span>
-                    <span className="name">{user.name}</span>
-                  </span>
-                  <form action={logoutAction}>
-                    <button type="submit" className="btn btn-ghost btn-sm">
-                      Keluar
-                    </button>
-                  </form>
-                </>
-              ) : (
-                <Link href="/login" className="btn btn-primary btn-sm">
-                  Masuk
+        <Suspense>
+          <Toasts />
+        </Suspense>
+
+        {user ? (
+          <AppShell user={user} pendingTotal={pendingTotal} unassignedTotal={unassignedTotal}>
+            {children}
+          </AppShell>
+        ) : (
+          <>
+            <header className="site-header">
+              <div className="container inner">
+                <Link href="/" className="brand">
+                  <span className="brand-mark">K</span>
+                  Komunifind
                 </Link>
-              )}
-            </div>
-          </div>
-        </header>
+                <nav className="nav">
+                  <Link href="/">Jelajah</Link>
+                  <Link href="/events">Event</Link>
+                </nav>
+                <div className="header-right">
+                  <Link href="/login" className="btn btn-primary btn-sm">
+                    Masuk
+                  </Link>
+                </div>
+              </div>
+            </header>
 
-        <main>{children}</main>
+            <main>{children}</main>
 
-        <footer className="site-footer">
-          <div className="container inner">
-            <span>Komunifind — direktori komunitas, dikelola panitia sendiri.</span>
-            <span>Dibuat untuk komunitas di Indonesia.</span>
-          </div>
-        </footer>
+            <footer className="site-footer">
+              <div className="container inner">
+                <span>Komunifind — direktori komunitas, dikelola panitia sendiri.</span>
+                <span>Dibuat untuk komunitas di Indonesia.</span>
+              </div>
+            </footer>
+          </>
+        )}
       </body>
     </html>
   );

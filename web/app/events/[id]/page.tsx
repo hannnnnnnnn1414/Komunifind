@@ -1,42 +1,36 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { apiFetch, ApiError } from "@/lib/api";
+import { getEventPublic } from "@/lib/store/events";
+import { listRegistrationsByUser } from "@/lib/store/registrations";
+import { isStoreError } from "@/lib/store/errors";
 import { formatDate, formatTime, mediaUrl, spotsLeft, statusLabel } from "@/lib/format";
-import { getSessionUser, getToken } from "@/lib/session";
+import { getSessionUser } from "@/lib/session";
 import type { Event, Registration } from "@/lib/types";
-import { Notices } from "@/components/Notices";
 import { cancelRegistrationAction, registerForEventAction } from "@/app/actions";
 
 export const dynamic = "force-dynamic";
 
 export default async function EventPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { id } = await params;
-  const sp = await searchParams;
-  const ok = typeof sp.ok === "string" ? sp.ok : undefined;
-  const err = typeof sp.err === "string" ? sp.err : undefined;
 
   let event: Event;
   try {
-    const res = await apiFetch<{ event: Event }>(`/api/v1/events/${id}`);
-    event = res.event;
+    event = await getEventPublic(Number(id));
   } catch (error) {
-    if (error instanceof ApiError && error.status === 404) notFound();
+    if (isStoreError(error) && error.code === "not_found") notFound();
     throw error;
   }
 
   const user = await getSessionUser();
-  const token = await getToken();
   let myRegistration: Registration | null = null;
-  if (user && token) {
+  if (user) {
     try {
-      const res = await apiFetch<{ items: Registration[] }>("/api/v1/me/registrations", { token });
-      myRegistration = res.items.find((r) => r.eventId === event.id) ?? null;
+      const items = await listRegistrationsByUser(user.id);
+      myRegistration = items.find((r) => r.eventId === event.id) ?? null;
     } catch {
       myRegistration = null;
     }
@@ -63,8 +57,6 @@ export default async function EventPage({
           {event.locationName ? ` · ${event.locationName}` : ""}
         </p>
       </div>
-
-      <Notices ok={ok} err={err} />
 
       <div className="detail-grid">
         <div className="prose">

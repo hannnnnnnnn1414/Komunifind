@@ -1,12 +1,12 @@
 import Link from "next/link";
-import { apiFetch } from "@/lib/api";
+import { listPublicCommunities, communityFacets } from "@/lib/store/communities";
+import { listPublishedEvents } from "@/lib/store/events";
 import { mediaUrl, pageUrl } from "@/lib/format";
 import type { Community, Event, ListResult } from "@/lib/types";
 import { CommunityCard } from "@/components/CommunityCard";
 import { EventRow } from "@/components/EventRow";
 import { HeroCarousel } from "@/components/HeroCarousel";
 import { PerspectiveTunnelHero } from "@/components/ui/PerspectiveTunnelHero";
-import { Notices } from "@/components/Notices";
 
 export const dynamic = "force-dynamic";
 
@@ -22,8 +22,6 @@ export default async function HomePage({
   const category = typeof sp.category === "string" ? sp.category : "";
   const city = typeof sp.city === "string" ? sp.city : "";
   const page = Math.max(Number(typeof sp.page === "string" ? sp.page : "1") || 1, 1);
-  const ok = typeof sp.ok === "string" ? sp.ok : undefined;
-  const err = typeof sp.err === "string" ? sp.err : undefined;
 
   let list: ListResult<Community> | null = null;
   let facets: Facets = { categories: [], cities: [] };
@@ -31,11 +29,10 @@ export default async function HomePage({
   let failed = false;
 
   try {
-    const query = new URLSearchParams({ q, category, city, page: String(page), perPage: "12" });
-    [list, facets, { items: events }] = await Promise.all([
-      apiFetch<ListResult<Community>>(`/api/v1/communities?${query.toString()}`),
-      apiFetch<Facets>("/api/v1/communities/facets"),
-      apiFetch<{ items: Event[] }>("/api/v1/events?limit=6"),
+    [list, facets, events] = await Promise.all([
+      listPublicCommunities(q, category, city, page, 12),
+      communityFacets(),
+      listPublishedEvents(6),
     ]);
   } catch {
     failed = true;
@@ -133,8 +130,7 @@ export default async function HomePage({
       </section>
 
       <div className="container">
-        <Notices ok={ok} err={err} />
-        {failed ? (
+          {failed ? (
           <div className="notice notice-warn mt-24">
             Data belum bisa dimuat. Pastikan API sedang berjalan, lalu muat ulang halaman.
           </div>

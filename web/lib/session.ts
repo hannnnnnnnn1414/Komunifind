@@ -1,7 +1,8 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
-import { apiFetch } from "./api";
+import { parseToken } from "./auth";
+import { getSessionUser as fetchSessionUser } from "./store/users";
 import type { Role, SessionUser } from "./types";
 
 export const SESSION_COOKIE = "kf_session";
@@ -15,8 +16,8 @@ export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
   const token = await getToken();
   if (!token) return null;
   try {
-    const res = await apiFetch<{ user: SessionUser }>("/api/v1/me", { token });
-    return res.user;
+    const claims = await parseToken(token);
+    return await fetchSessionUser(claims.userId);
   } catch {
     return null;
   }

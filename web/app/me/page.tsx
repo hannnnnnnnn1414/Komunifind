@@ -1,12 +1,14 @@
 import Link from "next/link";
-import { apiFetch } from "@/lib/api";
-import { requireUser, getToken } from "@/lib/session";
+import { requireUser } from "@/lib/session";
+import { listRegistrationsByUser } from "@/lib/store/registrations";
+import { Pagination } from "@/components/Pagination";
 import { formatDateTime, statusLabel } from "@/lib/format";
 import type { Registration } from "@/lib/types";
-import { Notices } from "@/components/Notices";
 import { cancelRegistrationAction } from "@/app/actions";
 
 export const dynamic = "force-dynamic";
+
+const PER_PAGE = 10;
 
 export default async function MyPage({
   searchParams,
@@ -14,21 +16,20 @@ export default async function MyPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const user = await requireUser();
-  const token = await getToken();
   const sp = await searchParams;
-  const ok = typeof sp.ok === "string" ? sp.ok : undefined;
-  const err = typeof sp.err === "string" ? sp.err : undefined;
+  const currentPage = Math.max(Number(sp.page) || 1, 1);
 
   let items: Registration[] = [];
   try {
-    const res = await apiFetch<{ items: Registration[] }>("/api/v1/me/registrations", { token: token ?? undefined });
-    items = res.items;
+    items = await listRegistrationsByUser(user.id);
   } catch {
     items = [];
   }
 
   const active = items.filter((r) => r.status === "pending" || r.status === "approved");
   const history = items.filter((r) => r.status === "rejected" || r.status === "cancelled");
+  const activePages = Math.max(Math.ceil(active.length / PER_PAGE), 1);
+  const visibleActive = active.slice((currentPage - 1) * PER_PAGE, currentPage * PER_PAGE);
 
   return (
     <div className="container">
@@ -37,8 +38,6 @@ export default async function MyPage({
         <h1>Halo, {user.name}</h1>
         <p className="sub">{user.email}</p>
       </div>
-
-      <Notices ok={ok} err={err} />
 
       <div className="stat-grid mb-24">
         <div className="stat">
@@ -69,7 +68,7 @@ export default async function MyPage({
               </tr>
             </thead>
             <tbody>
-              {active.map((reg) => {
+              {visibleActive.map((reg) => {
                 const past = new Date(reg.startsAt).getTime() < Date.now();
                 return (
                   <tr key={reg.id}>
@@ -108,6 +107,7 @@ export default async function MyPage({
           </p>
         </div>
       )}
+      <Pagination page={currentPage} totalPages={activePages} basePath="/me" />
 
       {history.length > 0 ? (
         <>

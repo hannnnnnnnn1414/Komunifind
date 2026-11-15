@@ -63,6 +63,12 @@ export function spotsLeft(capacity: number | null, approved: number): string {
 export function mediaUrl(key: string | null | undefined): string | null {
   if (!key) return null;
   if (key.startsWith("images/")) return `/${key}`;
+  if (process.env.STORAGE_DRIVER === "supabase") {
+    const base = process.env.SUPABASE_URL;
+    if (!base) return null;
+    const bucket = process.env.SUPABASE_STORAGE_BUCKET ?? "uploads";
+    return `${base.replace(/\/$/, "")}/storage/v1/object/public/${bucket}/${key}`;
+  }
   return `/uploads/${key}`;
 }
 

@@ -1,5 +1,5 @@
 import nodemailer from "nodemailer";
-import { apiFetch } from "./api";
+import { insertEmailLog } from "./store/emaillogs";
 
 type Template = "registration_received" | "registration_approved" | "registration_rejected" | "event_cancelled";
 
@@ -75,18 +75,13 @@ export async function sendMail(input: MailInput): Promise<void> {
   }
 
   try {
-    await apiFetch("/api/v1/internal/email-logs", {
-      method: "POST",
-      internal: true,
-      body: {
-        userId: input.userId ?? null,
-        template: input.template,
-        payload: { to: input.to, eventTitle: input.eventTitle, communityName: input.communityName },
-        sentAt: error ? null : new Date().toISOString(),
-        error,
-      },
+    await insertEmailLog({
+      userId: input.userId ?? null,
+      template: input.template,
+      payload: { to: input.to, eventTitle: input.eventTitle, communityName: input.communityName },
+      sentAt: error ? null : new Date().toISOString(),
+      error,
     });
   } catch {
-    // logging is best-effort
   }
 }

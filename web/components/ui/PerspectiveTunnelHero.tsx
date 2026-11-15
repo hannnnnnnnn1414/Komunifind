@@ -139,7 +139,6 @@ export function PerspectiveTunnelHero({ items }: Props) {
   const titleScale = useTransform(progress, [0, 0.55, 1], [0.86, 1, 1.22]);
   const titleOpacity = useTransform(progress, [0, 0.1, 1], [0.6, 1, 1]);
 
-
   if (reduce) {
     return (
       <section className={styles.staticWrap} aria-label="Komunitas pilihan">

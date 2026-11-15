@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { apiFetch } from "@/lib/api";
-import { getToken, requireUser } from "@/lib/session";
+import { requireUser } from "@/lib/session";
+import { listAllCommunitiesPaged } from "@/lib/store/communities";
+import { Pagination } from "@/components/Pagination";
 import { statusLabel } from "@/lib/format";
 import type { Community } from "@/lib/types";
-import { Notices } from "@/components/Notices";
 
 export const dynamic = "force-dynamic";
 
@@ -13,29 +13,30 @@ export default async function AdminHome({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   await requireUser(["admin"]);
-  const token = await getToken();
   const sp = await searchParams;
-  const ok = typeof sp.ok === "string" ? sp.ok : undefined;
-  const err = typeof sp.err === "string" ? sp.err : undefined;
+  const page = typeof sp.page === "string" ? sp.page : undefined;
+  const currentPage = Math.max(Number(page) || 1, 1);
 
   let communities: Community[] = [];
+  let total = 0;
   let failed = false;
   try {
-    const res = await apiFetch<{ items: Community[] }>("/api/v1/admin/communities", { token: token ?? undefined });
-    communities = res.items;
+    const result = await listAllCommunitiesPaged(currentPage, 10);
+    communities = result.items;
+    total = result.total;
   } catch {
     failed = true;
   }
+  const totalPages = Math.max(Math.ceil(total / 10), 1);
 
   return (
     <div>
-      <Notices ok={ok} err={err} />
       {failed ? <div className="notice notice-warn">Data komunitas gagal dimuat.</div> : null}
 
       <div className="section-head">
         <div>
           <h2>Komunitas</h2>
-          <p>{communities.length} komunitas terdaftar</p>
+              <p>{total} komunitas terdaftar</p>
         </div>
         <Link href="/admin/communities/new" className="btn btn-primary btn-sm">
           Komunitas baru
@@ -83,6 +84,7 @@ export default async function AdminHome({
           <p className="mb-0">Buat komunitas pertama untuk memulai.</p>
         </div>
       )}
+      <Pagination page={currentPage} totalPages={totalPages} basePath="/admin" />
     </div>
   );
 }

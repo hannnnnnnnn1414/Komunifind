@@ -1,4 +1,5 @@
-import { apiFetch } from "@/lib/api";
+import { listPublishedEventsPage } from "@/lib/store/events";
+import { Pagination } from "@/components/Pagination";
 import type { Event } from "@/lib/types";
 import { EventRow } from "@/components/EventRow";
 
@@ -6,15 +7,27 @@ export const dynamic = "force-dynamic";
 
 export const metadata = { title: "Event terdekat" };
 
-export default async function EventsPage() {
+const PER_PAGE = 12;
+
+export default async function EventsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const sp = await searchParams;
+  const currentPage = Math.max(Number(sp.page) || 1, 1);
+
   let events: Event[] = [];
+  let total = 0;
   let failed = false;
   try {
-    const res = await apiFetch<{ items: Event[] }>("/api/v1/events?limit=24");
-    events = res.items;
+    const result = await listPublishedEventsPage(currentPage, PER_PAGE);
+    events = result.items;
+    total = result.total;
   } catch {
     failed = true;
   }
+  const totalPages = Math.max(Math.ceil(total / PER_PAGE), 1);
 
   return (
     <div className="container">
@@ -40,6 +53,7 @@ export default async function EventsPage() {
           <p className="mb-0">Panitia belum menerbitkan event baru.</p>
         </div>
       ) : null}
+      <Pagination page={currentPage} totalPages={totalPages} basePath="/events" />
     </div>
   );
 }

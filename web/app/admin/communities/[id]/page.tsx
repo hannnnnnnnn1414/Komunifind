@@ -1,13 +1,18 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { apiFetch, ApiError } from "@/lib/api";
-import { getToken, requireUser } from "@/lib/session";
+import { requireUser } from "@/lib/session";
+import { getCommunityById } from "@/lib/store/communities";
+import { listEventsByCommunity } from "@/lib/store/events";
+import { getUserById } from "@/lib/store/users";
+import { Pagination } from "@/components/Pagination";
+import { isStoreError } from "@/lib/store/errors";
 import { formatDateTime, mediaUrl, statusLabel } from "@/lib/format";
-import type { Community, Event, User } from "@/lib/types";
-import { Notices } from "@/components/Notices";
+import type { Community, Event } from "@/lib/types";
 import { adminUpdateCommunityAction } from "@/app/actions";
 
 export const dynamic = "force-dynamic";
+
+const EVENTS_PER_PAGE = 10;
 
 export default async function AdminCommunityPage({
   params,
@@ -19,34 +24,28 @@ export default async function AdminCommunityPage({
   await requireUser(["admin"]);
   const { id } = await params;
   const sp = await searchParams;
-  const ok = typeof sp.ok === "string" ? sp.ok : undefined;
-  const err = typeof sp.err === "string" ? sp.err : undefined;
-  const token = await getToken();
-  const back = `/admin/communities/${id}`;
+  const currentPage = Math.max(Number(sp.page) || 1, 1);
 
   let community: Community;
   let events: Event[] = [];
   let organizerEmail = "";
   try {
-    const res = await apiFetch<{ community: Community; events: Event[] }>(`/api/v1/admin/communities/${id}`, {
-      token: token ?? undefined,
-    });
-    community = res.community;
-    events = res.events;
+    community = await getCommunityById(Number(id));
+    events = await listEventsByCommunity(community.id);
     if (community.organizerId) {
-      const users = await apiFetch<{ items: User[] }>("/api/v1/admin/users", { token: token ?? undefined });
-      organizerEmail = users.items.find((u) => u.id === community.organizerId)?.email ?? "";
+      organizerEmail = (await getUserById(community.organizerId)).email;
     }
   } catch (error) {
-    if (error instanceof ApiError && error.status === 404) notFound();
+    if (isStoreError(error) && error.code === "not_found") notFound();
     throw error;
   }
+  const totalPages = Math.max(Math.ceil(events.length / EVENTS_PER_PAGE), 1);
+  const visibleEvents = events.slice((currentPage - 1) * EVENTS_PER_PAGE, currentPage * EVENTS_PER_PAGE);
 
   const logo = mediaUrl(community.logoKey);
 
   return (
     <div>
-      <Notices ok={ok} err={err} />
 
       <div className="section-head">
         <div>
@@ -134,7 +133,7 @@ export default async function AdminCommunityPage({
               </tr>
             </thead>
             <tbody>
-              {events.map((e) => (
+              {visibleEvents.map((e) => (
                 <tr key={e.id}>
                   <td>{e.title}</td>
                   <td className="muted">{formatDateTime(e.startsAt)}</td>
@@ -156,6 +155,11 @@ export default async function AdminCommunityPage({
           <p className="mb-0">Panitia belum membuat event untuk komunitas ini.</p>
         </div>
       )}
+      <Pagination
+        page={currentPage}
+        totalPages={totalPages}
+        basePath={`/admin/communities/${community.id}`}
+      />
     </div>
   );
 }

@@ -1,8 +1,9 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { apiFetch } from "@/lib/api";
+import { issueToken } from "@/lib/auth";
+import { verifyGoogleIdToken } from "@/lib/google";
 import { homeForRole, SESSION_COOKIE } from "@/lib/session";
-import type { SessionUser } from "@/lib/types";
+import { upsertGoogleUser } from "@/lib/store/users";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -48,11 +49,10 @@ export async function GET(request: Request) {
   }
 
   try {
-    const session = await apiFetch<{ token: string; user: SessionUser }>("/api/v1/auth/google", {
-      method: "POST",
-      body: { idToken: tokenJson.id_token },
-    });
-    store.set(SESSION_COOKIE, session.token, {
+    const identity = await verifyGoogleIdToken(tokenJson.id_token);
+    const user = await upsertGoogleUser(identity.sub, identity.email, identity.name, identity.picture);
+    const token = await issueToken(user.id, user.role, user.communityId);
+    store.set(SESSION_COOKIE, token, {
       httpOnly: true,
       sameSite: "lax",
       secure: process.env.NODE_ENV === "production",
@@ -60,7 +60,7 @@ export async function GET(request: Request) {
       maxAge: 7 * 24 * 3600,
     });
     const destination =
-      nextPath.startsWith("/") && !nextPath.startsWith("//") ? nextPath : homeForRole(session.user.role);
+      nextPath.startsWith("/") && !nextPath.startsWith("//") ? nextPath : homeForRole(user.role);
     return NextResponse.redirect(new URL(destination, request.url));
   } catch {
     return NextResponse.redirect(new URL("/login?error=auth_failed", request.url));

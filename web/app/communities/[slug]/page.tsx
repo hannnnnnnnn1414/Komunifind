@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { apiFetch, ApiError } from "@/lib/api";
+import { getCommunityBySlug } from "@/lib/store/communities";
+import { listPublicEventsByCommunity } from "@/lib/store/events";
+import { isStoreError } from "@/lib/store/errors";
 import { mediaUrl } from "@/lib/format";
 import type { Community, Event } from "@/lib/types";
 import { EventRow } from "@/components/EventRow";
@@ -13,11 +15,11 @@ export default async function CommunityPage({ params }: { params: Promise<{ slug
   let community: Community;
   let events: Event[] = [];
   try {
-    const res = await apiFetch<{ community: Community; events: Event[] }>(`/api/v1/communities/${slug}`);
-    community = res.community;
-    events = res.events;
+    community = await getCommunityBySlug(slug);
+    if (community.status !== "published") notFound();
+    events = await listPublicEventsByCommunity(community.id);
   } catch (err) {
-    if (err instanceof ApiError && err.status === 404) notFound();
+    if (isStoreError(err) && err.code === "not_found") notFound();
     throw err;
   }
 

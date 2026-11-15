@@ -1,23 +1,14 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/session";
-import { Notices } from "@/components/Notices";
 import { organizerCreateEventAction } from "@/app/actions";
 
 export const dynamic = "force-dynamic";
 
-export default async function NewEventPage({
-  searchParams,
-}: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
+export default async function NewEventPage() {
   await requireUser(["organizer"]);
-  const sp = await searchParams;
-  const ok = typeof sp.ok === "string" ? sp.ok : undefined;
-  const err = typeof sp.err === "string" ? sp.err : undefined;
 
   return (
     <div className="container-narrow" style={{ padding: 0 }}>
-      <Notices ok={ok} err={err} />
       <div className="card card-body">
         <h2 style={{ fontSize: 21 }}>Event baru</h2>
         <p className="muted small">

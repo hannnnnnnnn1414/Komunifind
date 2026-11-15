@@ -1,10 +1,15 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { apiFetch, ApiError } from "@/lib/api";
-import { getToken, requireUser } from "@/lib/session";
+import { requireUser } from "@/lib/session";
+import { getCommunityByOrganizer } from "@/lib/store/communities";
+import { getEvent } from "@/lib/store/events";
+import { listRegistrationsByEvent } from "@/lib/store/registrations";
+import { isStoreError } from "@/lib/store/errors";
 import { formatDateTime, mediaUrl, spotsLeft, statusLabel, toDateTimeLocal } from "@/lib/format";
+import { Pagination } from "@/components/Pagination";
 import type { Event, Registration } from "@/lib/types";
-import { Notices } from "@/components/Notices";
+
+const REG_PER_PAGE = 10;
 import {
   approveRegistrationAction,
   organizerCancelEventAction,
@@ -22,24 +27,23 @@ export default async function ManageEventPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  await requireUser(["organizer"]);
+  const user = await requireUser(["organizer"]);
   const { id } = await params;
   const sp = await searchParams;
-  const ok = typeof sp.ok === "string" ? sp.ok : undefined;
-  const err = typeof sp.err === "string" ? sp.err : undefined;
-  const token = await getToken();
+  const regPage = Math.max(Number(sp.page) || 1, 1);
   const back = `/dashboard/events/${id}`;
 
   let event: Event;
   let registrations: Registration[] = [];
   try {
-    const res = await apiFetch<{ event: Event; registrations: Registration[] }>(`/api/v1/organizer/events/${id}`, {
-      token: token ?? undefined,
-    });
-    event = res.event;
-    registrations = res.registrations;
+    const community = await getCommunityByOrganizer(user.id);
+    event = await getEvent(Number(id));
+    if (event.communityId !== community.id) {
+      notFound();
+    }
+    registrations = await listRegistrationsByEvent(event.id);
   } catch (error) {
-    if (error instanceof ApiError && error.status === 404) notFound();
+    if (isStoreError(error) && error.code === "not_found") notFound();
     throw error;
   }
 
@@ -47,10 +51,14 @@ export default async function ManageEventPage({
   const pending = registrations.filter((r) => r.status === "pending");
   const approved = registrations.filter((r) => r.status === "approved");
   const full = event.capacity !== null && approved.length >= event.capacity;
+  const regPages = Math.max(Math.ceil(registrations.length / REG_PER_PAGE), 1);
+  const visibleRegistrations = registrations.slice(
+    (regPage - 1) * REG_PER_PAGE,
+    regPage * REG_PER_PAGE,
+  );
 
   return (
     <div>
-      <Notices ok={ok} err={err} />
 
       <div className="section-head">
         <div>
@@ -127,8 +135,8 @@ export default async function ManageEventPage({
               </tr>
             </thead>
             <tbody>
-              {registrations.map((reg) => (
-                <tr key={reg.id}>
+              {visibleRegistrations.map((reg) => (
+                <tr key={reg.id} className={reg.status === "pending" ? "row-pending" : undefined}>
                   <td>{reg.userName}</td>
                   <td className="muted">{reg.userEmail}</td>
                   <td className="muted">{formatDateTime(reg.createdAt)}</td>
@@ -168,6 +176,7 @@ export default async function ManageEventPage({
           <p className="mb-0">Peserta akan muncul di sini setelah event terbit.</p>
         </div>
       )}
+      <Pagination page={regPage} totalPages={regPages} basePath={back} />
 
       <div className="card card-body">
         <h2 style={{ fontSize: 20 }}>Edit event</h2>

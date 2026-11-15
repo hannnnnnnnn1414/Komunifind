@@ -1,27 +1,17 @@
-import { apiFetch } from "@/lib/api";
-import { getToken, requireUser } from "@/lib/session";
+import { requireUser } from "@/lib/session";
+import { getCommunityByOrganizer } from "@/lib/store/communities";
 import { mediaUrl } from "@/lib/format";
 import type { Community } from "@/lib/types";
-import { Notices } from "@/components/Notices";
 import { organizerUpdateCommunityAction } from "@/app/actions";
 
 export const dynamic = "force-dynamic";
 
-export default async function EditCommunityPage({
-  searchParams,
-}: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
-  await requireUser(["organizer"]);
-  const token = await getToken();
-  const sp = await searchParams;
-  const ok = typeof sp.ok === "string" ? sp.ok : undefined;
-  const err = typeof sp.err === "string" ? sp.err : undefined;
+export default async function EditCommunityPage() {
+  const user = await requireUser(["organizer"]);
 
   let community: Community | null = null;
   try {
-    const res = await apiFetch<{ community: Community }>("/api/v1/organizer/community", { token: token ?? undefined });
-    community = res.community;
+    community = await getCommunityByOrganizer(user.id);
   } catch {
     community = null;
   }
@@ -36,7 +26,6 @@ export default async function EditCommunityPage({
 
   return (
     <div className="container-narrow" style={{ padding: 0 }}>
-      <Notices ok={ok} err={err} />
       <div className="card card-body">
         <h2 style={{ fontSize: 21 }}>Profil komunitas</h2>
         <p className="muted small">Perubahan langsung tampil di halaman publik.</p>

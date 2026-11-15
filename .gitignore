@@ -21,12 +21,23 @@ pnpm-debug.log*
 # Data & uploads
 /data/
 /uploads/
+/web/data/
 *.tar.gz
 *.dump
 *.sql.gz
+
+# Playwright artifacts
+/web/test-results/
+/web/playwright-report/
+/web/blob-report/
+/test-results/
+/playwright-report/
 
 # OS / editor
 .DS_Store
 Thumbs.db
 .idea/
 .vscode/
+
+tsconfig.tsbuildinfo
+*.tsbuildinfo

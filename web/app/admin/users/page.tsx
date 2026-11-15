@@ -1,21 +1,32 @@
-import { apiFetch } from "@/lib/api";
-import { getToken, requireUser } from "@/lib/session";
+import { requireUser } from "@/lib/session";
+import { listUsers } from "@/lib/store/users";
+import { Pagination } from "@/components/Pagination";
 import type { User } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminUsersPage() {
+const PER_PAGE = 10;
+
+export default async function AdminUsersPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   await requireUser(["admin"]);
-  const token = await getToken();
+  const sp = await searchParams;
+  const currentPage = Math.max(Number(sp.page) || 1, 1);
 
   let users: User[] = [];
+  let total = 0;
   let failed = false;
   try {
-    const res = await apiFetch<{ items: User[] }>("/api/v1/admin/users", { token: token ?? undefined });
-    users = res.items;
+    const result = await listUsers("", currentPage, PER_PAGE);
+    users = result.items;
+    total = result.total;
   } catch {
     failed = true;
   }
+  const totalPages = Math.max(Math.ceil(total / PER_PAGE), 1);
 
   return (
     <div>
@@ -58,6 +69,7 @@ export default async function AdminUsersPage() {
           <p className="mb-0">Pengguna muncul setelah login pertama.</p>
         </div>
       )}
+      <Pagination page={currentPage} totalPages={totalPages} basePath="/admin/users" />
     </div>
   );
 }

@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: komunifind
+          POSTGRES_PASSWORD: komunifind_dev
+          POSTGRES_DB: komunifind
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U komunifind -d komunifind"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    defaults:
+      run:
+        working-directory: web
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
+
+      - name: Prepare test DB
+        run: |
+          psql "postgres://komunifind:komunifind_dev@localhost:5433/postgres?sslmode=disable" -c "CREATE DATABASE komunifind_test;"
+          DATABASE_URL="postgres://komunifind:komunifind_dev@localhost:5433/komunifind_test?sslmode=disable" npm run db:migrate
+
+      - name: Vitest (aturan bisnis)
+        run: TEST_DATABASE_URL="postgres://komunifind:komunifind_dev@localhost:5433/komunifind_test?sslmode=disable" npm test
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Playwright E2E (klik UI asli)
+        run: npm run test:e2e
+        env:
+          E2E_DATABASE_URL: "postgres://komunifind:komunifind_dev@localhost:5433/komunifind_e2e?sslmode=disable"
